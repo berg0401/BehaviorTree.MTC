@@ -32,13 +32,16 @@ BT::NodeStatus CreateMTCPipelinePlanner::tick()
   double max_velocity_scaling_factor;
   double max_acceleration_scaling_factor;
 
-  if(!getInput(kPortPipelineID, pipeline_id) ||
-     !getInput(kPortPlannerID, planner_id) ||
-     !getInput(kPortMaxVelocityScalingFactor, max_velocity_scaling_factor) ||
-     !getInput(kPortMaxAccelerationScalingFactor, max_acceleration_scaling_factor))
+  if(!getInput(kPortPipelineID, pipeline_id))
     return NodeStatus::FAILURE;
-
-  getInput(kPortGoalJointTolerance, goal_joint_tolerance);  //optional
+  if(!getInput(kPortPlannerID, planner_id))
+    return NodeStatus::FAILURE;
+  if(!getInput(kPortGoalJointTolerance, goal_joint_tolerance))
+    return NodeStatus::FAILURE;
+  if(!getInput(kPortMaxVelocityScalingFactor, max_velocity_scaling_factor))
+    return NodeStatus::FAILURE;
+  if(!getInput(kPortMaxAccelerationScalingFactor, max_acceleration_scaling_factor))
+    return NodeStatus::FAILURE;
 
   // Build solver
   auto solver = std::make_shared<MTC::solvers::PipelinePlanner>(pipeline_id);
@@ -60,9 +63,9 @@ BT::PortsList CreateMTCPipelinePlanner::providedPorts()
   return {
     BT::InputPort<std::string>(kPortPipelineID),
     BT::InputPort<std::string>(kPortPlannerID),
-    BT::InputPort<double>(kPortGoalJointTolerance, 1e-4, "tolerance for reaching joint goals"),
-    BT::InputPort<double>(kPortMaxVelocityScalingFactor, 0.1, "scale down max velocity by this factor"),
-    BT::InputPort<double>(kPortMaxAccelerationScalingFactor, 0.1, "cale down max acceleration by this factor"),
+    BT::InputPort<double>(kPortGoalJointTolerance, 1e-5, ""),
+    BT::InputPort<double>(kPortMaxVelocityScalingFactor),
+    BT::InputPort<double>(kPortMaxAccelerationScalingFactor),
     BT::OutputPort<MTC::solvers::PlannerInterfacePtr>(kPortSolver),
   };
 }
