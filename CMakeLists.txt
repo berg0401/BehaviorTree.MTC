@@ -32,7 +32,10 @@ add_library(${PROJECT_NAME}
   src/plan_mtc_task.cpp
   src/create_mtc_current_state.cpp
   src/create_mtc_move_relative.cpp
+<<<<<<< HEAD
   src/create_mtc_pipeline_planner.cpp
+=======
+>>>>>>> [impl] move relative mtc stage
   src/move_mtc_stage_to_container.cpp
 )
 
