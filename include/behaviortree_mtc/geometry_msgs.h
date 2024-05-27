@@ -4,15 +4,6 @@
 
 namespace bt_mtc
 {
-class GeometryMsgsPointStamped : public BT::SyncActionNode
-{
-public:
-  GeometryMsgsPointStamped(const std::string& name, const BT::NodeConfig& config);
-
-  BT::NodeStatus tick() override;
-  static BT::PortsList providedPorts();
-};
-
 class GeometryMsgsPoseStamped : public BT::SyncActionNode
 {
 public:
