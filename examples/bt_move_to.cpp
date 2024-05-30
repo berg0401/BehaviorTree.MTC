@@ -33,8 +33,44 @@ static const char* xml_text = R"(
        <MoveMTCStageToContainer  container="{container}" stage="{stage}" />
 
        <!-- joint named position motion -->
+       <CreateMTCMoveToNamedJointPose name="move to -> close_hand motion"
+                                       group="hand"
+                                       solver="{rrt_connect}"
+                                       goal="close"
+                                       stage="{stage_move_to_close_hand}" />
+       <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_close_hand}" />
+       <CreateMTCMoveToNamedJointPose name="move to -> open_hand motion"
+                                       group="hand"
+                                       solver="{rrt_connect}"
+                                       goal="open"
+                                       stage="{stage_move_to_open_hand}" />
+       <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_open_hand}" />
+       <!-- joint motion -->
+       <CreateMTCMoveToJoint       name="move to -> joint motion"
+                                   group="panda_arm"
+                                   solver="{rrt_connect}"
+                                   goal="panda_joint7:-1.57079632679,panda_joint6:3.14"
+                                   stage="{stage_move_to_joint}" />
+       <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_joint}" />
+       <!-- cartesian pose motion -->
        <GeometryMsgsPoseStamped  frame_id="panda_link8" position="0,0,0" quaternion="1,0,0,0" pose_stamped="{ik_frame}"/>
-       
+       <GeometryMsgsPoseStamped  frame_id="panda_link8" position="0,0,0.05" quaternion="0,0,0,0" pose_stamped="{goal_pose}"/>
+       <CreateMTCMoveToPose        name="move to -> cartesian pose motion"
+                                   group="panda_arm"
+                                   solver="{rrt_connect}"
+                                   ik_frame="{ik_frame}"
+                                   goal="{goal_pose}"
+                                   stage="{stage_move_to_pose}" />
+      <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_pose}" />
+      <!-- cartesian point motion -->
+       <GeometryMsgsPointStamped  frame_id="panda_link8" point="0,0.05,0" point_stamped="{goal_point}"/>
+       <CreateMTCMoveToPoint       name="move to -> cartesian point motion"
+                                   group="panda_arm"
+                                   solver="{rrt_connect}"
+                                   ik_frame="{ik_frame}"
+                                   goal="{goal_point}"
+                                   stage="{stage_move_to_point}" />
+      <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_point}" />
        <PlanMTCTask              task="{mtc_task}" max_solutions="5" />
      </Sequence>
    </BehaviorTree>
@@ -42,8 +78,8 @@ static const char* xml_text = R"(
  </root>
  )";
 // clang-format on
-int main(int argc, char** argv){
-
+int main(int argc, char** argv)
+{
   ros::init(argc, argv, "test_behavior_tree");
   ros::AsyncSpinner spinner(1);
   spinner.start();
@@ -53,11 +89,15 @@ int main(int argc, char** argv){
   factory.registerNodeType<InitializeMTCTask>("InitializeMTCTask");
   factory.registerNodeType<CreateMTCPipelinePlanner>("CreateMTCPipelinePlanner");
   factory.registerNodeType<CreateMTCCurrentState>("CreateMTCCurrentState");
-  factory.registerNodeType<CreateMTCMoveToPose>("CreateMTCMoveToNamedJointPose");
+  factory.registerNodeType<CreateMTCMoveToNamedJointPose>("CreateMTCMoveToNamedJointPose");
+  factory.registerNodeType<CreateMTCMoveToJoint>("CreateMTCMoveToJoint");
+  factory.registerNodeType<CreateMTCMoveToPose>("CreateMTCMoveToPose");
+  factory.registerNodeType<CreateMTCMoveToPoint>("CreateMTCMoveToPoint");
   factory.registerNodeType<MoveMTCStageToContainer>("MoveMTCStageToContainer");
   factory.registerNodeType<PlanMTCTask>("PlanMTCTask");
 
   factory.registerNodeType<GeometryMsgsPoseStamped>("GeometryMsgsPoseStamped");
+  factory.registerNodeType<GeometryMsgsPointStamped>("GeometryMsgsPointStamped");
   factory.registerNodeType<GeometryMsgsVector3Stamped>("GeometryMsgsVector3Stamped");
   factory.registerNodeType<GeometryMsgsTwistStamped>("GeometryMsgsTwistStamped");
 
@@ -76,6 +116,7 @@ int main(int argc, char** argv){
 
   // Gives the user time to connect to Groot2
   int wait_time = 5000;
+
   std::cout << "Waiting " << wait_time << " msec for connection with Groot2...\n\n"
             << std::endl;
   std::this_thread::sleep_for(std::chrono::milliseconds(wait_time));
@@ -98,37 +139,3 @@ int main(int argc, char** argv){
 
   return 0;
 }
-
-
-// <!--
-//        <!-- Twist Motion -->
-//        <GeometryMsgsPoseStamped  frame_id="panda_link8" position="0,0,0" quaternion="1,0,0,0" pose_stamped="{ik_frame}"/>
-//        <GeometryMsgsTwistStamped frame_id="panda_link8" linear_velocity="0,0,0" angular_velocity="0,0,1.57079632679" twist_stamped="{tcp_twist}"/>
-//        <CreateMTCMoveRelativeTwist name="move relative -> twist motion"
-//                                    group="panda_arm"
-//                                    solver="{rrt_connect}"
-//                                    ik_frame="{ik_frame}"
-//                                    direction="{tcp_twist}"
-//                                    stage="{stage_move_rel_twist}" />
-//        <MoveMTCStageToContainer  container="{container}" stage="{stage_move_rel_twist}" />
-
-//        <!-- Joint Motion -> return end joint to default value -->
-//        <GeometryMsgsPoseStamped  frame_id="panda_link8" position="0,0,0" quaternion="1,0,0,0" pose_stamped="{ik_frame}"/>
-//        <CreateMTCMoveRelativeJoint name="move relative -> joint motion"
-//                                    group="panda_arm"
-//                                    solver="{rrt_connect}"
-//                                    ik_frame="{ik_frame}"
-//                                    direction="panda_joint7:-1.57079632679"
-//                                    stage="{stage_move_rel_joint}" />
-//        <MoveMTCStageToContainer  container="{container}" stage="{stage_move_rel_joint}" />
-// -->
-
-
-
-// <CreateMTCMoveToNamedJointPose name="move relative -> tcp translation"
-//                                        group="hand_group_name_"
-//                                        solver="{rrt_connect}"
-//                                        ik_frame="{ik_frame}"
-//                                        goal="hand_open_pose_"
-//                                        stage="{stage_move_to_named_pose}" />
-//        <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_named_pose}" />

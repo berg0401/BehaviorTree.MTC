@@ -13,6 +13,14 @@ public:
   BT::NodeStatus tick(std::shared_ptr<moveit::task_constructor::stages::MoveTo>& stage);
   static BT::PortsList providedPorts();
 };
+class CreateMTCMoveToBaseCartesian : public CreateMTCMoveToBase
+{
+public:
+  CreateMTCMoveToBaseCartesian(const std::string& name, const BT::NodeConfig& config);
+
+  BT::NodeStatus tick(std::shared_ptr<moveit::task_constructor::stages::MoveTo>& stage);
+  static BT::PortsList providedPorts();
+};
 class CreateMTCMoveToNamedJointPose : public CreateMTCMoveToBase
 {
 public:
@@ -29,7 +37,7 @@ public:
   BT::NodeStatus tick() override;
   static BT::PortsList providedPorts();
 };
-class CreateMTCMoveToPose : public CreateMTCMoveToBase
+class CreateMTCMoveToPose : public CreateMTCMoveToBaseCartesian
 {
 public:
   CreateMTCMoveToPose(const std::string& name, const BT::NodeConfig& config);
@@ -37,12 +45,12 @@ public:
   BT::NodeStatus tick() override;
   static BT::PortsList providedPorts();
 };
-class CreateMTCMoveToPoint : public CreateMTCMoveToBase
+class CreateMTCMoveToPoint : public CreateMTCMoveToBaseCartesian
 {
 public:
   CreateMTCMoveToPoint(const std::string& name, const BT::NodeConfig& config);
 
   BT::NodeStatus tick() override;
   static BT::PortsList providedPorts();
-};                                                                                              
+};
 }  // namespace bt_mtc
