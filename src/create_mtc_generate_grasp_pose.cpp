@@ -17,7 +17,7 @@ constexpr auto kPortObject = "object";
 constexpr auto kPortAngleDelta = "angle_delta";
 constexpr auto kPortRotationAxis = "rotation_axis";
 constexpr auto kPortPreGraspPose = "pregrasp_pose";
-
+constexpr auto kPortMonitoredStage = "monitored_stage";
 }  // namespace
 
 CreateMTCGenerateGraspPose::CreateMTCGenerateGraspPose(const std::string& name,
@@ -32,12 +32,14 @@ BT::NodeStatus CreateMTCGenerateGraspPose::tick()
   double angle_delta;
   Vector3D rotation_axis_input;
   Eigen::Vector3d rotation_axis;
+  MTC::Stage* monitored_stage;
   if(!getInput(kPortStageName, name) ||
      !getInput(kPortEef, eef) ||
      !getInput(kPortAngleDelta, angle_delta) ||
      !getInput(kPortObject, object) ||
      !getInput(kPortPreGraspPose, pregrasp_pose) ||
-     !getInput(kPortRotationAxis, rotation_axis))
+     !getInput(kPortMonitoredStage, monitored_stage) ||
+     !getInput(kPortRotationAxis, rotation_axis_input))
     return NodeStatus::FAILURE;
   // Build stage
   std::shared_ptr<MTC::stages::GenerateGraspPose> stage{ nullptr };
@@ -53,6 +55,7 @@ BT::NodeStatus CreateMTCGenerateGraspPose::tick()
   stage->setAngleDelta(angle_delta);
   stage->setRotationAxis(rotation_axis);
   stage->setPreGraspPose(pregrasp_pose);
+  stage->setMonitoredStage(monitored_stage);
 
   // Upcast to base class
   MTC::StagePtr base_stage = stage;
@@ -67,9 +70,11 @@ BT::PortsList CreateMTCGenerateGraspPose::providedPorts()
   return {
     BT::InputPort<std::string>(kPortEef, "name of end-effector"),
     BT::InputPort<double>(kPortAngleDelta, 0.1, "angular steps (rad)"),
+    BT::InputPort<std::string>(kPortObject,"object on which we generate the grasp poses"),
     BT::InputPort<Vector3D>(kPortRotationAxis, "0,0,1", "rotate object pose about given axis"),
     BT::InputPort<std::string>(kPortPreGraspPose, "pregrasp posture"),
     BT::InputPort<std::string>(kPortStageName),
+    BT::InputPort<MTC::Stage*>(kPortMonitoredStage),
     BT::OutputPort<MTC::StagePtr>(kPortStage, "{generate_grasp_pose}", "GenerateGraspPose Stage"),
   };
 }

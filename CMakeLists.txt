@@ -44,6 +44,7 @@ add_library(${PROJECT_NAME}
   src/create_planning_scene_interface.cpp
   src/moveit_msgs.cpp
   src/set_up_scene.cpp
+  src/create_mtc_move_to.cpp
 )
 
 add_executable(bt_demo examples/bt_demo.cpp)
@@ -60,3 +61,8 @@ add_executable(bt_create_collision_object examples/bt_create_collision_object.cp
 
 target_include_directories(bt_create_collision_object PRIVATE ${catkin_INCLUDE_DIRS} include)
 target_link_libraries(bt_create_collision_object ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+add_executable(bt_generate_grasp_pose examples/bt_generate_grasp_pose.cpp)
+
+target_include_directories(bt_generate_grasp_pose PRIVATE ${catkin_INCLUDE_DIRS} include)
+target_link_libraries(bt_generate_grasp_pose ${PROJECT_NAME} ${catkin_LIBRARIES})

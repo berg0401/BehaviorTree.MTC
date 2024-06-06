@@ -1,4 +1,5 @@
 #include <behaviortree_mtc/plan_mtc_task.h>
+#include <ros/ros.h>
 
 #include <moveit/task_constructor/task.h>
 
@@ -24,11 +25,18 @@ BT::NodeStatus PlanMTCTask::tick()
   {
     if(auto* task_ptr = any_ptr->castPtr<MTC::TaskPtr>())
     {
+      try{
       auto& task = *task_ptr;
       if(task->plan(max_solutions))
       {
         return NodeStatus::SUCCESS;
       }
+      }
+      catch (moveit::task_constructor::InitStageException e)
+      {
+        ROS_ERROR_STREAM(e);
+      }
+      return NodeStatus::FAILURE;
     }
   }
   return NodeStatus::FAILURE;
