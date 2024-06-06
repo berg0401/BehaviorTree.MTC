@@ -13,6 +13,7 @@
 #include <behaviortree_mtc/create_mtc_generate_grasp_pose.h>
 #include <behaviortree_mtc/get_mtc_raw_stage.h>
 #include <behaviortree_mtc/create_mtc_move_to.h>
+#include <behaviortree_mtc/create_mtc_connect.h>
 
 #include "behaviortree_cpp/bt_factory.h"
 #include "behaviortree_cpp/loggers/bt_file_logger_v2.h"
@@ -75,6 +76,12 @@ static const char* xml_text = R"(
                                       stage="{stage_move_to_open_hand}" />
             <GetMTCRawStage  stage="{stage_move_to_open_hand}" raw_stage="{raw_stage}"  />
             <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_open_hand}" />
+            <CreateMTCConnect  stage_name="MoveToPick"
+                               timeout="5.0"
+                               group="panda_arm"
+                               planner="{rrt_connect}"
+                               stage="{connect}" />
+            <MoveMTCStageToContainer  container="{container}" stage="{connect}" />  
             <CreateMTCGenerateGraspPose  stage_name="generate_grasp_pose"
                                          eef="{eef}"
                                          object="{object_name}"
@@ -113,6 +120,7 @@ int main(int argc, char** argv)
   factory.registerNodeType<PlanMTCTask>("PlanMTCTask");
   factory.registerNodeType<GetMTCRawStage>("GetMTCRawStage");
   factory.registerNodeType<CreateMTCMoveToNamedJointPose>("CreateMTCMoveToNamedJointPose");
+  factory.registerNodeType<CreateMTCConnect>("CreateMTCConnect");
 
   auto tree = factory.createTreeFromText(xml_text);
 
