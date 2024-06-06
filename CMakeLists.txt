@@ -44,6 +44,8 @@ add_library(${PROJECT_NAME}
   src/create_planning_scene_interface.cpp
   src/moveit_msgs.cpp
   src/set_up_scene.cpp
+  src/create_mtc_move_to.cpp
+  src/create_mtc_connect.cpp
 )
 
 add_executable(bt_demo examples/bt_demo.cpp)
@@ -60,3 +62,8 @@ add_executable(bt_create_collision_object examples/bt_create_collision_object.cp
 
 target_include_directories(bt_create_collision_object PRIVATE ${catkin_INCLUDE_DIRS} include)
 target_link_libraries(bt_create_collision_object ${PROJECT_NAME} ${catkin_LIBRARIES})
+
+add_executable(bt_set_ik_frame examples/bt_set_ik_frame.cpp)
+
+target_include_directories(bt_set_ik_frame PRIVATE ${catkin_INCLUDE_DIRS} include)
+target_link_libraries(bt_set_ik_frame ${PROJECT_NAME} ${catkin_LIBRARIES})
