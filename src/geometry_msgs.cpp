@@ -6,6 +6,9 @@
 #include <geometry_msgs/TwistStamped.h>
 #include <geometry_msgs/Vector3Stamped.h>
 #include <geometry_msgs/Pose.h>
+#include <tf2_eigen/tf2_eigen.h>
+#include <Eigen/Geometry>
+
 
 using namespace BT;
 using namespace bt_mtc;
@@ -24,6 +27,7 @@ constexpr auto kPortTwistStamped = "twist_stamped";
 constexpr auto kPortLinearVelocity = "linear_velocity";
 constexpr auto kPortAngularVelocity = "angular_velocity";
 constexpr auto kPortPose = "pose";
+constexpr auto kPortOrientation = "orientation";
 
 }  // namespace
 GeometryMsgsPointStamped::GeometryMsgsPointStamped(const std::string& name,
@@ -104,6 +108,55 @@ BT::PortsList GeometryMsgsPoseStamped::providedPorts()
     BT::InputPort<std::string>(kPortFrameID),
     BT::InputPort<Vector3D>(kPortPosition),
     BT::InputPort<Vector4D>(kPortQuaternion),
+    BT::OutputPort<std::shared_ptr<geometry_msgs::PoseStamped>>(kPortPoseStamped),
+  };
+}
+
+GeometryMsgsEigenToPoseStamped::GeometryMsgsEigenToPoseStamped(const std::string& name,
+                                                 const BT::NodeConfig& config)
+  : SyncActionNode(name, config)
+{}
+
+BT::NodeStatus GeometryMsgsEigenToPoseStamped::tick()
+{
+  // Retrieve inputs
+  std::string frame_id;
+  Vector3D position;
+  Vector3D orientation;
+
+  if(!getInput(kPortFrameID, frame_id) ||
+     !getInput(kPortPosition, position) ||
+     !getInput(kPortOrientation, orientation))
+    return NodeStatus::FAILURE;
+
+  Eigen::Vector3d translation(position.x, position.y, position.z);
+  double roll = orientation.x;
+  double pitch = orientation.y;
+  double yaw = orientation.z;
+  Eigen::Matrix3d rotation;
+  rotation = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
+             Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+             Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
+  Eigen::Isometry3d EigenPose = Eigen::Isometry3d::Identity();
+  EigenPose.translation() = translation;
+  EigenPose.linear() = rotation;
+  
+  // Build pose
+  auto pose = std::make_shared<geometry_msgs::PoseStamped>();
+  
+  pose->header.frame_id = frame_id;
+  pose->pose = tf2::toMsg(EigenPose);
+  setOutput(kPortPoseStamped, pose);
+
+  return NodeStatus::SUCCESS;
+}
+
+BT::PortsList GeometryMsgsEigenToPoseStamped::providedPorts()
+{
+  return {
+    BT::InputPort<std::string>(kPortFrameID),
+    BT::InputPort<Vector3D>(kPortPosition),
+    BT::InputPort<Vector3D>(kPortOrientation),
     BT::OutputPort<std::shared_ptr<geometry_msgs::PoseStamped>>(kPortPoseStamped),
   };
 }

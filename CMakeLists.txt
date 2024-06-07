@@ -46,6 +46,7 @@ add_library(${PROJECT_NAME}
   src/set_up_scene.cpp
   src/create_mtc_move_to.cpp
   src/create_mtc_connect.cpp
+  src/create_mtc_compute_ik_frame.cpp
 )
 
 add_executable(bt_demo examples/bt_demo.cpp)

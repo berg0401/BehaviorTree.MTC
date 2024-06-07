@@ -1,3 +1,4 @@
+#include <ros/ros.h>
 #include <behaviortree_mtc/create_mtc_generate_grasp_pose.h>
 #include <behaviortree_mtc/custom_types.h>
 #include <behaviortree_mtc/shared_to_unique.h>
@@ -33,6 +34,7 @@ BT::NodeStatus CreateMTCGenerateGraspPose::tick()
   Vector3D rotation_axis_input;
   Eigen::Vector3d rotation_axis;
   MTC::Stage* monitored_stage;
+  geometry_msgs::PoseStamped target;
   if(!getInput(kPortStageName, name) ||
      !getInput(kPortEef, eef) ||
      !getInput(kPortAngleDelta, angle_delta) ||
@@ -56,7 +58,6 @@ BT::NodeStatus CreateMTCGenerateGraspPose::tick()
   stage->setRotationAxis(rotation_axis);
   stage->setPreGraspPose(pregrasp_pose);
   stage->setMonitoredStage(monitored_stage);
-
   // Upcast to base class
   MTC::StagePtr base_stage = stage;
 

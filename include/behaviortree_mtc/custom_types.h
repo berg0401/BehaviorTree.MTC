@@ -96,18 +96,4 @@ inline Vector2D convertFromString(StringView key)
   output.y = convertFromString<double>(parts[1]);
   return output;
 }
-template <>
-inline std::vector<double> convertFromString(StringView key)
-{
-  const auto parts = BT::splitString(key, ',');
-  if(parts.size() != 2)
-  {
-    throw BT::RuntimeError("invalid input)");
-  }
-
-  std::vector<double> output(2);
-  output[0] = convertFromString<double>(parts[0]);
-  output[1] = convertFromString<double>(parts[1]);
-  return output;
-}
 }  // namespace BT
