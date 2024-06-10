@@ -9,7 +9,6 @@
 #include <tf2_eigen/tf2_eigen.h>
 #include <Eigen/Geometry>
 
-
 using namespace BT;
 using namespace bt_mtc;
 
@@ -113,7 +112,7 @@ BT::PortsList GeometryMsgsPoseStamped::providedPorts()
 }
 
 GeometryMsgsEigenToPoseStamped::GeometryMsgsEigenToPoseStamped(const std::string& name,
-                                                 const BT::NodeConfig& config)
+                                                               const BT::NodeConfig& config)
   : SyncActionNode(name, config)
 {}
 
@@ -129,23 +128,25 @@ BT::NodeStatus GeometryMsgsEigenToPoseStamped::tick()
      !getInput(kPortOrientation, orientation))
     return NodeStatus::FAILURE;
 
-  Eigen::Vector3d translation(position.x, position.y, position.z);
+  // Set the translation
+  Eigen::Isometry3d poseEigen = Eigen::Isometry3d::Identity();
+  poseEigen.translation() = Eigen::Vector3d(position.x, position.y, position.z);
+
+  // Set the rotation using roll, pitch, yaw
   double roll = orientation.x;
   double pitch = orientation.y;
   double yaw = orientation.z;
-  Eigen::Matrix3d rotation;
-  rotation = Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()) *
-             Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
-             Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX());
-  Eigen::Isometry3d EigenPose = Eigen::Isometry3d::Identity();
-  EigenPose.translation() = translation;
-  EigenPose.linear() = rotation;
-  
+
+  poseEigen.linear() = (Eigen::AngleAxisd(roll, Eigen::Vector3d::UnitX()) *
+                        Eigen::AngleAxisd(pitch, Eigen::Vector3d::UnitY()) *
+                        Eigen::AngleAxisd(yaw, Eigen::Vector3d::UnitZ()))
+                           .toRotationMatrix();
+
   // Build pose
   auto pose = std::make_shared<geometry_msgs::PoseStamped>();
-  
+
   pose->header.frame_id = frame_id;
-  pose->pose = tf2::toMsg(EigenPose);
+  pose->pose = tf2::toMsg(poseEigen);
   setOutput(kPortPoseStamped, pose);
 
   return NodeStatus::SUCCESS;
@@ -162,7 +163,7 @@ BT::PortsList GeometryMsgsEigenToPoseStamped::providedPorts()
 }
 
 GeometryMsgsPose::GeometryMsgsPose(const std::string& name,
-                                                 const BT::NodeConfig& config)
+                                   const BT::NodeConfig& config)
   : SyncActionNode(name, config)
 {}
 

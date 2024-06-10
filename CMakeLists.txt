@@ -47,6 +47,8 @@ add_library(${PROJECT_NAME}
   src/create_mtc_move_to.cpp
   src/create_mtc_connect.cpp
   src/create_mtc_compute_ik_frame.cpp
+  src/create_mtc_serial_container.cpp
+  src/move_mtc_container_to_parent_container.cpp
 )
 
 add_executable(bt_demo examples/bt_demo.cpp)

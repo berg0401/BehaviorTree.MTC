@@ -3,6 +3,8 @@
 #include <behaviortree_mtc/initialize_mtc_task.h>
 #include <behaviortree_mtc/create_mtc_current_state.h>
 #include <behaviortree_mtc/move_mtc_stage_to_container.h>
+#include <behaviortree_mtc/move_mtc_container_to_parent_container.h>
+#include <behaviortree_mtc/create_mtc_serial_container.h>
 #include <behaviortree_mtc/plan_mtc_task.h>
 #include <behaviortree_mtc/moveit_msgs.h>
 #include <behaviortree_mtc/geometry_msgs.h>
@@ -14,6 +16,8 @@
 #include <behaviortree_mtc/get_mtc_raw_stage.h>
 #include <behaviortree_mtc/create_mtc_move_to.h>
 #include <behaviortree_mtc/create_mtc_connect.h>
+#include <behaviortree_mtc/create_mtc_move_relative.h>
+#include <behaviortree_mtc/create_mtc_compute_ik_frame.h>
 
 #include "behaviortree_cpp/bt_factory.h"
 #include "behaviortree_cpp/loggers/bt_file_logger_v2.h"
@@ -34,6 +38,9 @@ static const char* xml_text = R"(
             <Script code="reference_frame:='world' " />
             <Script code="eef:='hand' " />
             <Script code="angle:=3.141592653589793/12 " />
+            <Script code="arm_group_name:='panda_arm'" />
+            <Script code="hand_group_name:='hand'" />
+            <Script code="hand_frame:='panda_link8'" />
             <CreatePlanningSceneInterface  planning_scene_interface="{psi}" />
             <GeometryMsgsPose  name="box's pose"
                                position="0.5,-0.25,-0.05"
@@ -53,43 +60,67 @@ static const char* xml_text = R"(
             <MoveItMsgsCollisionObjectCylinder  object_name="{object_name}" 
                                                 object_dimensions="0.25,0.02"
                                                 pose="{cylinder_pose}"
-                                                object_reference_frame="world"
+                                                object_reference_frame="{reference_frame}"
                                                 collision_object="{cylinder}"  />
             <SetUpScene  planning_scene_interface="{psi}" 
                          collision_object="{cylinder}"/> 
-            <InitializeMTCTask        task="{mtc_task}" container="{container}" />
+            <InitializeMTCTask        task="{mtc_task}" container="{task_container}" />
             <CreateMTCPipelinePlanner pipeline_id="ompl"
                                  planner_id="RRTConnect"
-                                 solver="{rrt_connect}" />
-            <CreateMTCCurrentState    stage="{stage}" />
-            <MoveMTCStageToContainer  container="{container}" stage="{stage}" />
+                                 solver="{rrt_connect}"
+                                 goal_joint_tolerance="1e-5" />
+            <CreateMTCCurrentState    stage="{current_state}" />
+            <MoveMTCStageToContainer  container="{task_container}" stage="{current_state}" />
+            <GeometryMsgsPoseStamped  frame_id="{hand_frame}" position="0,0,0" quaternion="1,0,0,0" pose_stamped="{ik_frame}"/>
             <CreateMTCMoveToNamedJointPose name="move to -> close_hand motion"
-                                      group="hand"
+                                      group="{hand_group_name}"
                                       solver="{rrt_connect}"
                                       goal="close"
                                       stage="{stage_move_to_close_hand}" />
-            <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_close_hand}" />
+            <MoveMTCStageToContainer  container="{task_container}" stage="{stage_move_to_close_hand}" />
             <CreateMTCMoveToNamedJointPose name="move to -> open_hand motion"
-                                      group="hand"
+                                      group="{hand_group_name}"
                                       solver="{rrt_connect}"
                                       goal="open"
                                       stage="{stage_move_to_open_hand}" />
             <GetMTCRawStage  stage="{stage_move_to_open_hand}" raw_stage="{raw_stage}"  />
-            <MoveMTCStageToContainer  container="{container}" stage="{stage_move_to_open_hand}" />
+            <MoveMTCStageToContainer  container="{task_container}" stage="{stage_move_to_open_hand}" />
             <CreateMTCConnect  stage_name="MoveToPick"
                                timeout="5.0"
-                               group="panda_arm"
+                               group="{arm_group_name}"
                                planner="{rrt_connect}"
                                stage="{connect}" />
-            <MoveMTCStageToContainer  container="{container}" stage="{connect}" />  
+            <MoveMTCStageToContainer  container="{task_container}" stage="{connect}" />  
+            <CreateMTCSerialContainer  container_name="pick object"
+                                       serial_container="{pick_object}" />
+            <GeometryMsgsVector3Stamped  frame_id="{hand_frame}" vector="0,0,1" vector3_stamped="{tcp_translate}"/>
+            <CreateMTCMoveRelativeTranslate  stage_name="approach object"
+                                             stage="{approach_object}"
+                                             group="{arm_group_name}"
+                                             solver="{rrt_connect}"
+                                             ik_frame="{ik_frame}"
+                                             direction="{tcp_translate}"
+                                             min_distance="0.1"
+                                             max_distance="0.15" />
+            <MoveMTCStageToContainer  container="{pick_object}" stage="{approach_object}" />    
             <CreateMTCGenerateGraspPose  stage_name="generate_grasp_pose"
                                          eef="{eef}"
                                          object="{object_name}"
                                          angle_delta="{angle}"
                                          pregrasp_pose="open"
                                          monitored_stage="{raw_stage}"
-                                         stage="{generate_pose}" /> 
-            <MoveMTCStageToContainer stage="{generate_pose}" container="{container}" /> 
+                                         stage="{generate_pose}" />
+            <GeometryMsgsEigenToPoseStamped  frame_id="{hand_frame}" position="0,0,0.1" orientation="1.571,0.785,1.571" pose_stamped="{ik_frame2}"/>
+            <CreateMTCComputeIkFrame  stage_name="grasp pose IK"
+                                      eef="{eef}"
+                                      group="{arm_group_name}"
+                                      child="{generate_pose}"
+                                      max_ik_solutions="8"
+                                      min_solution_distance="1.0"
+                                      stage="{grasp_pose_IK}"
+                                      ik_frame="{ik_frame2}"  />
+            <MoveMTCStageToContainer  container="{pick_object}" stage="{grasp_pose_IK}" />
+            <MoveMTCContainerToParentContainer parent_container="{task_container}"  child_container="{pick_object}" />
             <PlanMTCTask              task="{mtc_task}" max_solutions="5" />
         </Sequence>
      </BehaviorTree>
@@ -108,6 +139,8 @@ int main(int argc, char** argv)
   BehaviorTreeFactory factory;
 
   factory.registerNodeType<GeometryMsgsPose>("GeometryMsgsPose");
+  factory.registerNodeType<GeometryMsgsPoseStamped>("GeometryMsgsPoseStamped");
+  factory.registerNodeType<GeometryMsgsVector3Stamped>("GeometryMsgsVector3Stamped");
   factory.registerNodeType<MoveItMsgsCollisionObjectCylinder>("MoveItMsgsCollisionObjectCylinder");
   factory.registerNodeType<MoveItMsgsCollisionObjectBox>("MoveItMsgsCollisionObjectBox");
   factory.registerNodeType<CreatePlanningSceneInterface>("CreatePlanningSceneInterface");
@@ -121,6 +154,11 @@ int main(int argc, char** argv)
   factory.registerNodeType<GetMTCRawStage>("GetMTCRawStage");
   factory.registerNodeType<CreateMTCMoveToNamedJointPose>("CreateMTCMoveToNamedJointPose");
   factory.registerNodeType<CreateMTCConnect>("CreateMTCConnect");
+  factory.registerNodeType<MoveMTCContainerToParentContainer>("MoveMTCContainerToParentContainer");
+  factory.registerNodeType<CreateMTCSerialContainer>("CreateMTCSerialContainer");
+  factory.registerNodeType<CreateMTCMoveRelativeTranslate>("CreateMTCMoveRelativeTranslate");
+  factory.registerNodeType<CreateMTCComputeIkFrame>("CreateMTCComputeIkFrame");
+  factory.registerNodeType<GeometryMsgsEigenToPoseStamped>("GeometryMsgsEigenToPoseStamped");
 
   auto tree = factory.createTreeFromText(xml_text);
 
@@ -160,9 +198,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-
-
-
-
-
-

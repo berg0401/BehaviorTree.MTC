@@ -20,14 +20,10 @@ constexpr auto kPortMaxIkSolutions = "max_ik_solutions";
 constexpr auto kPortIgnoreCollisions = "ignore_collisions";
 constexpr auto kPortMinSolutionDistance = "min_solution_distance";
 constexpr auto kPortIkFrame = "ik_frame";
-// constexpr auto kPortTranslationTransform = "translation_transform";
-// constexpr auto kPortRotationTransform = "rotation_transform";
-constexpr auto kPortTargetPose = "target_pose";
-
 }  // namespace
 
 CreateMTCComputeIkFrame::CreateMTCComputeIkFrame(const std::string& name,
-                                                       const BT::NodeConfig& config)
+                                                 const BT::NodeConfig& config)
   : SyncActionNode(name, config)
 {}
 
@@ -36,13 +32,13 @@ BT::NodeStatus CreateMTCComputeIkFrame::tick()
   // Retrieve inputs
   std::string name, eef, group, default_pose;
   bool ignore_collisions;
-  uint32_t max_ik_solutions; 
+  uint32_t max_ik_solutions;
   double min_solution_distance;
   Vector3D translation_transform;
   Vector3D rotation_transform;
   MTC::StagePtr child;
   std::shared_ptr<geometry_msgs::PoseStamped> ik_frame{ nullptr };
-  
+
   if(!getInput(kPortStageName, name) ||
      !getInput(kPortEef, eef) ||
      !getInput(kPortGroup, group) ||
@@ -51,6 +47,7 @@ BT::NodeStatus CreateMTCComputeIkFrame::tick()
      !getInput(kPortMaxIkSolutions, max_ik_solutions) ||
      !getInput(kPortIkFrame, ik_frame))
     return NodeStatus::FAILURE;
+
   // Transform stage from shared to unique
   MTC::Stage::pointer unique_stage{ nullptr };
   if(auto any_stage_ptr = getLockedPortContent(kPortChild))
@@ -67,7 +64,7 @@ BT::NodeStatus CreateMTCComputeIkFrame::tick()
   // Build stage
   std::shared_ptr<MTC::stages::ComputeIK> wrapper{ nullptr };
   wrapper = {
-    new MTC::stages::ComputeIK(name,std::move(unique_stage)),
+    new MTC::stages::ComputeIK(name, std::move(unique_stage)),
     dirty::fake_deleter{}
   };
   wrapper->setEndEffector(eef);
@@ -91,18 +88,13 @@ BT::PortsList CreateMTCComputeIkFrame::providedPorts()
   return {
     BT::InputPort<std::string>(kPortEef, "name of end-effector"),
     BT::InputPort<std::string>(kPortStageName),
-    BT::InputPort<std::string>(kPortGroup,"name of active group (derived from eef if not provided)"),
-    BT::InputPort<bool>(kPortIgnoreCollisions,false, "ignore collisions, true or false"),
-    BT::InputPort<uint32_t>(kPortMaxIkSolutions,1,"max ik solutions"),
-    BT::InputPort<double>(kPortMinSolutionDistance, 0.1,"minimum distance between seperate IK solutions for the same target"),
+    BT::InputPort<std::string>(kPortGroup, "name of active group (derived from eef if not provided)"),
+    BT::InputPort<bool>(kPortIgnoreCollisions, false, "ignore collisions, true or false"),
+    BT::InputPort<uint32_t>(kPortMaxIkSolutions, 1, "max ik solutions"),
+    BT::InputPort<double>(kPortMinSolutionDistance, 0.1, "minimum distance between seperate IK solutions for the same target"),
     BT::InputPort<MTC::StagePtr>(kPortChild),
     BT::InputPort<std::shared_ptr<geometry_msgs::PoseStamped>>(kPortIkFrame),
 
     BT::OutputPort<MTC::StagePtr>(kPortStage, "{generate_grasp_pose}", "GenerateGraspPose Stage"),
   };
 }
-//IKFRAME WITH POSE OR WITH LINK
-//START WITH LINK
-
-// BT::InputPort<Vector3D>(kPortTranslationTransform),
-    // BT::InputPort<Vector3D>(kPortRotationTransform),

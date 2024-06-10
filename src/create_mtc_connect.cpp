@@ -49,7 +49,6 @@ BT::NodeStatus CreateMTCConnect::tick()
   stage->setTimeout(timeout);
   stage->setProperty("merge_mode",static_cast<MTC::stages::Connect::MergeMode>(merge_mode));
   stage->setProperty("max_distance",max_distance);
-  std::cout<<"here"<<std::endl;
 
   // Upcast to base class
   MTC::StagePtr base_stage = stage;
